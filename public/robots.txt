@@ -1,0 +1,4 @@
+User-agent: *
+Allow: /
+
+Sitemap: https://background-lift.vercel.app/sitemap.xml

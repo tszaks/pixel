@@ -1,0 +1,6 @@
+# Pixel
+
+> Pixel is a private, in-browser background removal tool. Images are processed locally in the browser.
+
+- App: https://background-lift.vercel.app/
+- Source: https://github.com/tszaks/pixel
