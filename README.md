@@ -1,56 +1,89 @@
-# Pixel
+<h1 align="center">Pixel</h1>
 
-Pixel is an agent-ready image utility for clean cutouts, transparent PNGs, logo recoloring, and optional AI upscaling.
+<p align="center">
+  Clean cutouts, transparent PNGs, logo recoloring and optional Topaz upscaling, from a web app, a CLI or an HTTP endpoint.
+</p>
 
-It is built for two audiences:
+<p align="center">
+  <a href="https://github.com/tszaks/pixel/actions/workflows/ci.yml"><img src="https://github.com/tszaks/pixel/actions/workflows/ci.yml/badge.svg" alt="CI"></a>
+  <a href="LICENSE"><img src="https://img.shields.io/github/license/tszaks/pixel" alt="MIT license"></a>
+  <img src="https://img.shields.io/badge/Node-20.19%2B-339933" alt="Node 20.19 or later">
+</p>
 
-- Humans who want a small web app and CLI for background removal.
-- Agents that need a predictable local or HTTP contract for producing verified image assets.
+A real run of the CLI (output trimmed):
 
-## What Pixel Does
-
-- Removes photo backgrounds in the browser with a neural matte model.
-- Removes flat logo and icon backgrounds without deleting enclosed artwork.
-- Removes smooth or gradient backgrounds with a deterministic edge-profile strategy.
-- Recolors the dominant foreground color while preserving alpha and protected details.
-- Exports transparent PNG or WebP.
-- Optionally upscales finished assets through Topaz for final-quality output.
-- Falls back to Sharp resize only when you explicitly choose a preview-grade local resize.
-
-## Billing And API Key Safety
-
-Pixel does not include a paid API key.
-
-If you enable Topaz upscaling, you must use your own `TOPAZ_API_KEY`. Topaz usage can create charges on your account. Do not commit the key, paste it into prompts, expose it in browser code, or ship it in public deployments.
-
-Safe setup:
-
-```bash
-cp .env.example .env.local
-# edit .env.local and add your own TOPAZ_API_KEY only if you want Topaz upscaling
+```console
+$ npm run cutout -- --input logo.png --output logo-blue.png --strategy logo --to '#0066ff' --json
+{
+  "input": "/Users/you/logo.png",
+  "output": "/Users/you/logo-blue.png",
+  "strategy": "logo",
+  "requestedStrategy": "logo",
+  "format": "png",
+  "elapsedMs": 31,
+  "color": { "from": "#00b82e", "to": "#0066ff" }
+}
 ```
 
-For hosted deployments, set `TOPAZ_API_KEY` as a private server-side environment variable in your hosting provider. Never prefix it with `VITE_`, because that would expose it to the browser.
+Pixel removes the background from an image and gives you a real transparent PNG or WebP. Flat logos and icons are handled by deterministic code that keeps enclosed artwork (the white inside a logo stays white). Photos go through a neural matte model. You can also recolor the main foreground color and upscale the result.
 
-## Quick Start
+It is for two kinds of users. Humans get a small web app and a CLI. Agents get a predictable local and HTTP contract, plus JSON output they can check, so they can produce and verify image assets without guessing.
+
+## Features
+
+- **Photo cutouts in the browser.** A neural matte model (`@imgly/background-removal`) runs in the web app. The `ai` strategy does the same in the local CLI.
+- **Flat logo and icon cutouts.** The `logo` strategy removes the edge-connected background and keeps enclosed same-color details.
+- **Smooth background cutouts.** The `smooth` strategy removes simple gradients by estimating the background profile from the image edges.
+- **Recoloring.** Replace the dominant foreground color (or a color you pick) while keeping alpha and protected details.
+- **PNG or WebP output** with real alpha. A checkerboard preview is not a transparent file.
+- **Upscaling, two ways.** Topaz (paid, needs your own API key) for final quality, or a local Sharp resize for previews.
+- **Agent-ready.** `--json` output from the CLI and a single HTTP endpoint. See [docs/AGENT_USAGE.md](docs/AGENT_USAGE.md).
+
+## What needs a paid or external service
+
+| Feature | Needs | Cost |
+| --- | --- | --- |
+| `logo` and `smooth` cutouts, recoloring, PNG/WebP export | Nothing. Runs locally with Sharp. | Free |
+| `ai` cutouts (web app and CLI) | The `@imgly/background-removal` packages. The web app downloads model files when you first run a cutout. | Free |
+| Sharp upscaling (`--upscale-provider sharp`) | Nothing. Local resize. | Free |
+| Topaz upscaling (the default provider whenever you upscale) | Your own `TOPAZ_API_KEY` and network access to `api.topazlabs.com`. | Billed by Topaz to your account |
+
+Pixel does not ship an API key. Never commit your key, put it in browser code, or prefix it with `VITE_`. In a hosted deployment, set it as a private server-side environment variable.
+
+## Install
+
+You need Node.js 20.19 or later (Vite 8 requires 20.19+ or 22.12+) and npm.
 
 ```bash
+git clone https://github.com/tszaks/pixel.git
+cd pixel
 npm install
 npm run dev
 ```
 
-Build and check:
+Vite prints the local URL for the web app. To check your setup:
 
 ```bash
 npm run lint
 npm run build
 ```
 
-## CLI Usage
+Optional: add a Topaz key for upscaling.
 
-Run commands from the repo root.
+```bash
+cp .env.example .env.local
+# edit .env.local and set TOPAZ_API_KEY
+```
 
-Basic transparent PNG:
+The CLI reads `TOPAZ_API_KEY` from the process environment. It does not load `.env.local` by itself, so export it in your shell or set it inline (see below).
+
+## Usage
+
+### CLI
+
+Run commands from the repo root. Paths are resolved from where you run the command.
+
+Transparent PNG:
 
 ```bash
 npm run cutout -- \
@@ -60,7 +93,9 @@ npm run cutout -- \
   --json
 ```
 
-Recolor after cutout:
+If you leave out `--output`, Pixel writes `<input name>-cutout.<format>` next to the input.
+
+Recolor after the cutout:
 
 ```bash
 npm run cutout -- \
@@ -71,7 +106,7 @@ npm run cutout -- \
   --json
 ```
 
-World-class transparent PNG upscale after cutout:
+Topaz upscale after the cutout (paid, needs `TOPAZ_API_KEY`):
 
 ```bash
 TOPAZ_API_KEY="$TOPAZ_API_KEY" npm run cutout -- \
@@ -83,7 +118,7 @@ TOPAZ_API_KEY="$TOPAZ_API_KEY" npm run cutout -- \
   --json
 ```
 
-Preview-grade local resize:
+Local preview resize (free, not final quality):
 
 ```bash
 npm run cutout -- \
@@ -95,38 +130,53 @@ npm run cutout -- \
   --json
 ```
 
-## Strategies
+### Strategies
 
-| Strategy | Use For | Notes |
+| Strategy | Use for | Notes |
 | --- | --- | --- |
-| `auto` | Let Pixel choose | Uses image analysis. |
-| `logo` | Logos, icons, flat art | Removes edge-connected background and preserves enclosed same-color details. |
-| `smooth` | Simple gradients or smooth backgrounds | Estimates a horizontal background profile from image edges. |
-| `ai` | Natural photos | Local CLI only. Uses `@imgly/background-removal-node`. |
+| `auto` | Let Pixel choose | Analyzes the image and picks `logo`, `smooth` or `ai`. Photos pick `ai`, which the hosted API cannot run. |
+| `logo` | Logos, icons, flat art | Removes the edge-connected background and keeps enclosed same-color details. Default tolerance `18`. |
+| `smooth` | Simple gradients or smooth backgrounds | Estimates a horizontal background profile from the image edges. Default tolerance `30`, softness `24`. |
+| `ai` | Natural photos | Web app and local CLI only. The CLI uses `@imgly/background-removal-node`. |
 
-## Upscaling
+`smooth` works in the CLI but is missing from `--help` text. The default strategy is `auto`.
 
-Topaz is the final-quality path.
+### CLI options
 
-| Input | Default Model | Endpoint |
+| Option | Meaning | Default |
+| --- | --- | --- |
+| `--input`, `-i` | Source image (required) | none |
+| `--output`, `-o` | Output path | `<input>-cutout.<format>` |
+| `--strategy` | `auto`, `logo`, `smooth`, `ai` | `auto` |
+| `--format` | `png` or `webp` | `png` |
+| `--tolerance` | Background color tolerance for `logo` and `smooth` | `18` (`logo`), `30` (`smooth`) |
+| `--feather` | Alpha blur for `logo` | `0` |
+| `--model` | `small` or `medium`, for `ai` | `medium` |
+| `--to`, `--from` | Recolor target and optional source color | dominant saturated foreground color for `--from` |
+| `--color-tolerance`, `--color-softness` | Recolor matching and edge softness | `42`, `22` |
+| `--upscale` | `2`, `3` or `4` | none |
+| `--upscale-provider` | `topaz` or `sharp` | `topaz` |
+| `--upscale-model` | `transparent`, `high-fidelity`, `low-resolution`, `art`, `text` | `transparent` for images with alpha, `high-fidelity` otherwise |
+| `--upscale-width`, `--upscale-height` | Exact target size. One side keeps the aspect ratio. | none |
+| `--topaz-timeout-ms` | Max wait for a Topaz job | `600000` |
+| `--json` | Print a machine-readable result | off |
+
+The CLI also passes a few extra Topaz options through (`--sharpen`, `--denoise`, `--fix-compression`, `--face-enhancement` and similar). See `lib/upscale-engine.mjs`.
+
+### Upscaling
+
+| Input | Default model | Endpoint |
 | --- | --- | --- |
 | Transparent PNG, logos, icons, overlays | `Transparency Upscale` | `https://api.topazlabs.com/image/v1/tool/async` |
-| Photos and non-alpha images | `Upscale High Fidelity V3` | `https://api.topazlabs.com/image/v1/enhance/async` |
+| Photos and images without alpha | `Upscale High Fidelity V3` | `https://api.topazlabs.com/image/v1/enhance/async` |
 
-Useful options:
+`Transparency Upscale` supports up to 4x. Sharp upscaling is deterministic and cheap, but it is a preview, not a substitute for AI super-resolution.
 
-- `--upscale 2|3|4`
-- `--upscale-provider topaz|sharp`
-- `--upscale-model transparent|high-fidelity|low-resolution|art|text`
-- `--upscale-width 2048`
-- `--upscale-height 2048`
-- `--topaz-timeout-ms 600000`
+> **Known issue.** In the current code the Topaz path fails before it makes any request, with `Cannot access 'process' before initialization`, because `lib/upscale-engine.mjs` declares a local `process` variable that shadows Node's `process`. Sharp upscaling and everything else work. Until that is fixed, Topaz upscaling will not run even with a valid key.
 
-`sharp` upscaling is intentionally labeled as preview-grade. It is deterministic and cheap, but it is not a substitute for AI super-resolution.
+### HTTP API
 
-## HTTP API
-
-`POST /api/remove-background`
+`POST /api/remove-background` is a Vercel-style function in `api/remove-background.js`. The body limit is 16 MB.
 
 ```json
 {
@@ -139,7 +189,7 @@ Useful options:
 }
 ```
 
-Alternative remote input:
+Or give a remote image instead:
 
 ```json
 {
@@ -149,75 +199,73 @@ Alternative remote input:
 }
 ```
 
-Response:
+The response body is the image bytes. `Content-Type` is `image/png` or `image/webp`. Errors return HTTP 400 with a JSON `error`.
 
-- Body is image bytes.
-- `Content-Type` is `image/png` or `image/webp`.
-- `X-Background-Lift-Strategy` reports the strategy used.
-- `X-Background-Lift-Analysis` contains URL-encoded JSON image analysis.
-- `X-Background-Lift-Upscale` contains URL-encoded JSON upscaling metadata when requested.
+| Response header | Content |
+| --- | --- |
+| `X-Background-Lift-Strategy` | Strategy actually used |
+| `X-Background-Lift-Analysis` | URL-encoded JSON image analysis |
+| `X-Background-Lift-Upscale` | URL-encoded JSON upscale metadata, when requested |
+| `X-Background-Lift-Color` | URL-encoded JSON recolor info, when recoloring |
 
-The hosted API waits synchronously for Topaz jobs by default. Use the local CLI for large assets or long Topaz jobs unless your serverless timeout is high enough.
+The `X-Background-Lift-*` names are from the project's earlier name.
 
-## Agent Contract
+The hosted function waits for Topaz jobs in the same request. On Vercel the function limit is 60 seconds (`vercel.json`), so use the local CLI for large images or slow Topaz jobs. The `ai` strategy returns an error from this endpoint. Every request field is listed in [docs/AGENT_USAGE.md](docs/AGENT_USAGE.md).
+
+## Configuration
+
+| Variable | Needed for | Default |
+| --- | --- | --- |
+| `TOPAZ_API_KEY` | Topaz upscaling (CLI and HTTP API). Server side only. | unset |
+| `TOPAZ_WAIT_MS` | How long the HTTP API waits for a Topaz job, in milliseconds. | `55000` |
+
+Without `TOPAZ_API_KEY`, background removal, logo matting, recoloring and Sharp resizing all work.
+
+## Made for AI agents
 
 Agents should follow this order:
 
-1. Identify the source image and desired output path.
-2. Decide cutout behavior before processing.
-3. Use `logo` for flat logos/icons unless the image is clearly photographic.
-4. Preserve enclosed cutouts when the user says to keep interior white/black/details.
-5. Remove enclosed cutouts only when explicitly requested.
-6. Create a real transparent PNG for final output. Checkerboard previews are not final assets.
-7. Use Topaz for final upscaling. Do not call Sharp resize "world class."
-8. Verify alpha and dimensions before reporting success.
+1. Identify the source image and the output path.
+2. Decide the cutout behavior before processing.
+3. Use `logo` for flat logos and icons unless the image is clearly a photo.
+4. Keep enclosed cutouts (interior white, black or details) unless the user asks to remove them.
+5. Write a real transparent PNG for final output.
+6. Use Topaz for final upscaling. Treat Sharp as a preview.
+7. Verify alpha and dimensions before reporting success.
 
-Minimum verification:
+Minimum checks: corner and edge background alpha is `0`; foreground alpha is nonzero; preserved interior details stay opaque; removed interior details are transparent; recolored pixels match the target; upscaled dimensions match the request.
 
-- Corner or edge background alpha is `0`.
-- Foreground alpha is nonzero, usually `255`.
-- Preserved interior details stay opaque.
-- Removed interior details become transparent.
-- Recolored foreground pixels match the target color.
-- Upscaled output dimensions match the requested scale or target size.
+`--json` output includes `input`, `output`, `strategy`, `requestedStrategy`, `format`, `elapsedMs`, `analysis`, plus `color` when recoloring and `upscale` when upscaling. The full contract is in [docs/AGENT_USAGE.md](docs/AGENT_USAGE.md).
 
-Machine-readable CLI output uses `--json` and includes:
+## FAQ
 
-- `input`
-- `output`
-- `strategy`
-- `requestedStrategy`
-- `format`
-- `elapsedMs`
-- `analysis`
-- `color`, when recoloring was used
-- `upscale`, when upscaling was used
+**Does Pixel send my images anywhere?**
+Only if you ask it to. Local strategies (`logo`, `smooth`), recoloring and Sharp resize run on your machine. Topaz upscaling uploads the image to `api.topazlabs.com`. The `imageUrl` option of the HTTP API makes the server fetch that URL. The web app downloads matte model files the first time you use it.
 
-## Environment Variables
+**Can I deploy the API publicly?**
+Be careful. The function has no authentication and sends `Access-Control-Allow-Origin: *`. Anyone who finds the URL can use your `TOPAZ_API_KEY` credits, and `imageUrl` makes your server fetch any URL it is given. Put it behind your own auth before you expose it.
 
-```bash
-TOPAZ_API_KEY=
-TOPAZ_WAIT_MS=55000
-```
+**Why does the browser need special headers?**
+`vercel.json` sets `Cross-Origin-Opener-Policy` and `Cross-Origin-Embedder-Policy` so the in-browser model can run.
 
-`TOPAZ_API_KEY` is optional. Pixel works without it for background removal, logo matting, recoloring, and Sharp preview resizing. Topaz-backed upscaling requires it.
+**Can I use any images for training or evals?**
+Use images you own, images users gave you, or images with a license that fits your use. See [docs/TRAINING_AND_EVAL.md](docs/TRAINING_AND_EVAL.md).
 
-## Development Notes
-
-Important files:
+## Project map
 
 - `src/App.tsx`: browser UI.
-- `api/remove-background.js`: Vercel-compatible HTTP endpoint.
+- `api/remove-background.js`: HTTP endpoint.
 - `scripts/remove-background.mjs`: local CLI.
-- `lib/background-engine.mjs`: deterministic background removal strategies.
+- `lib/background-engine.mjs`: background removal strategies.
 - `lib/color-tools.mjs`: recoloring.
 - `lib/upscale-engine.mjs`: Sharp and Topaz upscaling.
-- `docs/AGENT_USAGE.md`: compact agent-facing usage contract.
 
-## Data Rules
+## Contributing
 
-Use images you own, user-provided images, or images with a license that allows your use case. Do not build training or eval sets from random web images without license review.
+Bug reports and pull requests are welcome. Please read [CONTRIBUTING.md](CONTRIBUTING.md) first. Security problems go through [SECURITY.md](SECURITY.md). Everyone taking part follows the [Code of Conduct](CODE_OF_CONDUCT.md).
+
+Docs: [agent usage](docs/AGENT_USAGE.md) · [training and eval plan](docs/TRAINING_AND_EVAL.md) · [changelog](CHANGELOG.md)
 
 ## License
 
-MIT
+[MIT](LICENSE)

@@ -1,0 +1,63 @@
+name: Bug report
+description: Something in Pixel does not work as it should
+labels: ["bug"]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Thanks for reporting. Never paste your `TOPAZ_API_KEY` or attach images you do not have the right to share.
+  - type: textarea
+    id: what-happened
+    attributes:
+      label: What happened
+      description: What did you do, what did you expect, and what happened instead?
+    validations:
+      required: true
+  - type: textarea
+    id: steps
+    attributes:
+      label: Steps to reproduce
+      description: The exact command or request you ran. A small sample image helps a lot.
+      placeholder: |
+        npm run cutout -- --input in.png --strategy logo --json
+    validations:
+      required: true
+  - type: dropdown
+    id: surface
+    attributes:
+      label: Where did it happen
+      options:
+        - Web app
+        - CLI
+        - HTTP API
+        - Not sure
+    validations:
+      required: true
+  - type: dropdown
+    id: strategy
+    attributes:
+      label: Strategy
+      options:
+        - auto
+        - logo
+        - smooth
+        - ai
+        - Not applicable
+  - type: dropdown
+    id: upscale
+    attributes:
+      label: Upscaling
+      options:
+        - None
+        - Topaz
+        - Sharp
+  - type: input
+    id: node
+    attributes:
+      label: Node version and OS
+      placeholder: "Node 22.12, macOS 26"
+  - type: textarea
+    id: extra
+    attributes:
+      label: Anything else
+      description: Error output, the `--json` result, or screenshots.
