@@ -4,7 +4,7 @@ The fastest way to make this better is to build a small hard-case eval set befor
 
 ## Store Cases
 
-Use `eval/cases/<case-name>/`:
+This is a plan. The `eval/` folder does not exist in the repo yet. Use `eval/cases/<case-name>/`:
 
 - `input.png`
 - `expected.png`
@@ -12,10 +12,10 @@ Use `eval/cases/<case-name>/`:
 
 Important first cases:
 
-- Vero money logo on white background, preserving enclosed white logo shapes.
-- Vero alternate money logo on pale background, preserving white shadow layer.
-- Snow countdown graphic, removing light-blue connected background while preserving floating snowflakes.
-- GNA gradient header, removing smooth blue gradient while preserving the blue logo mark.
+- Flat logo on a white background, preserving enclosed white logo shapes.
+- Flat logo on a pale background, preserving a white shadow layer.
+- Graphic with floating small shapes (such as snowflakes) on a light-blue connected background, removing the background while preserving the shapes.
+- Header with a smooth blue gradient, removing the gradient while preserving the logo mark.
 
 ## Scoring
 
@@ -37,7 +37,7 @@ Use these sources:
 Avoid these sources:
 
 - Random web-scraped images without license review.
-- Private photos unless Tyler explicitly approves them for training.
+- Private photos unless the owner explicitly approves them for training.
 - Third-party logos used as training data without permission.
 
 ## Model Improvement Path

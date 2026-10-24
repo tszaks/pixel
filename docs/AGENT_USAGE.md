@@ -1,15 +1,17 @@
 # Pixel Agent Usage
 
+Set `PIXEL_URL` to your own deployment of Pixel (see the README).
+
 Pixel is both a web app and a programmatic image cutout tool.
 
 ## Local CLI
 
-Use this path when an agent has access to Tyler's local filesystem.
+Use this path when an agent has access to the local filesystem.
 
 ```bash
 npm run cutout -- \
-  --input /Users/tyler/Downloads/vero_logo.png \
-  --output /Users/tyler/Downloads/vero_logo-transparent.png \
+  --input /Users/you/Downloads/logo.png \
+  --output /Users/you/Downloads/logo-transparent.png \
   --strategy logo \
   --upscale 4 \
   --to '#0066ff' \
@@ -19,7 +21,7 @@ npm run cutout -- \
 Strategies:
 
 - `auto`: choose a strategy from image analysis.
-- `logo`: remove only the connected background color from the canvas. This preserves enclosed white artwork, such as the white parts of the Vero money logo.
+- `logo`: remove only the connected background color from the canvas. This preserves enclosed white artwork, such as the white parts of a two-color logo.
 - `smooth`: remove a smooth or gradient background estimated from the image edges.
 - `ai`: run the local neural matte model for photos and natural subjects.
 
@@ -46,16 +48,16 @@ Topaz model defaults:
 ## HTTP API
 
 ```bash
-curl -X POST "$BACKGROUND_LIFT_URL/api/remove-background" \
+curl -X POST "$PIXEL_URL/api/remove-background" \
   -H "Content-Type: application/json" \
   -d '{
-    "imageBase64": "'"$(base64 -i /Users/tyler/Downloads/vero_logo.png)"'",
+    "imageBase64": "'"$(base64 -i /Users/you/Downloads/logo.png)"'",
     "strategy": "logo",
     "format": "png",
     "upscale": 4,
     "to": "#0066ff"
   }' \
-  --output /Users/tyler/Downloads/vero_logo-transparent.png
+  --output /Users/you/Downloads/logo-transparent.png
 ```
 
 Request fields:
@@ -86,13 +88,13 @@ Response:
 - `X-Background-Lift-Analysis` contains URL-encoded JSON image analysis.
 - `X-Background-Lift-Upscale` contains URL-encoded JSON upscaling metadata when requested.
 
-## Vero Logo Requirement
+## Example: flat logo
 
-For `/Users/tyler/Downloads/vero_logo.png`, use `strategy: "logo"`.
+For `/Users/you/Downloads/logo.png` (a flat logo on a white canvas), use `strategy: "logo"`.
 
 Expected result:
 
 - Outside canvas background alpha is `0`.
-- Green logo body alpha is `255`.
-- White dollar-sign cut shapes alpha is `255`.
+- Logo body alpha is `255`.
+- Enclosed white shapes inside the logo keep alpha `255`.
 - Exterior antialias pixels are converted away from white halo artifacts.
